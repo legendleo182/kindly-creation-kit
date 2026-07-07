@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Search, Play, Pause, Music2, Loader2 } from "lucide-react";
+import { Search, Play, Music2, Loader2, Heart } from "lucide-react";
 import {
   searchSongs,
   suggestSongs,
@@ -10,6 +10,8 @@ import {
   type Track,
   type Suggestion,
 } from "@/lib/gaana.functions";
+import { AppHeader, pickUrl, usePlayer, type Quality } from "@/lib/player-context";
+import { usePlaylist } from "@/lib/playlist-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,12 +34,6 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-type Quality = "very_high" | "high" | "medium" | "low";
-
-function pickUrl(t: Track, quality: Quality): string | undefined {
-  return t.music[quality] ?? t.music.high ?? t.music.medium ?? t.music.low;
-}
-
 function useDebounced<T>(value: T, delay = 250): T {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -52,13 +48,12 @@ function Home() {
   const suggestFn = useServerFn(suggestSongs);
   const getTrackFn = useServerFn(getTrack);
 
+  const { current, playing, quality, setQuality, play, toggle } = usePlayer();
+  const playlist = usePlaylist();
+
   const [query, setQuery] = useState("");
-  const [quality, setQuality] = useState<Quality>("high");
-  const [current, setCurrent] = useState<Track | null>(null);
-  const [playing, setPlaying] = useState(false);
   const [focused, setFocused] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
   const debounced = useDebounced(query, 220);
@@ -76,10 +71,8 @@ function Home() {
 
   const sugList: Suggestion[] = suggestions.data ?? [];
   const showDropdown = focused && debounced.trim().length >= 2 && sugList.length > 0;
-
   const results = search.data ?? [];
 
-  // Close dropdown on outside click
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (!wrapRef.current?.contains(e.target as Node)) setFocused(false);
@@ -96,24 +89,12 @@ function Home() {
     search.mutate(query.trim());
   }
 
-  function playTrack(t: Track) {
-    const url = pickUrl(t, quality);
-    if (!url) return;
-    setCurrent(t);
-    requestAnimationFrame(() => {
-      const a = audioRef.current;
-      if (!a) return;
-      a.src = url;
-      a.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-    });
-  }
-
   async function playSuggestion(s: Suggestion) {
     setFocused(false);
     setActiveIdx(-1);
     setQuery(s.title);
     const t = await getTrackFn({ data: { seokey: s.seokey } });
-    if (t) playTrack(t);
+    if (t) play(t);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -132,30 +113,9 @@ function Home() {
     }
   }
 
-  function toggle() {
-    const a = audioRef.current;
-    if (!a || !current) return;
-    if (a.paused) {
-      a.play().then(() => setPlaying(true)).catch(() => {});
-    } else {
-      a.pause();
-      setPlaying(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/60 backdrop-blur sticky top-0 z-20 bg-background/80">
-        <div className="max-w-4xl mx-auto px-4 py-5 flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-primary text-primary-foreground grid place-items-center">
-            <Music2 className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold leading-tight">Dhun</h1>
-            <p className="text-xs text-muted-foreground">Search & play any song</p>
-          </div>
-        </div>
-      </header>
+      <AppHeader active="search" />
 
       <main className="max-w-4xl mx-auto px-4 pt-8 pb-40">
         <form onSubmit={onSubmit} className="flex gap-2">
@@ -257,47 +217,20 @@ function Home() {
 
         {results.length > 0 && (
           <ul className="mt-8 grid gap-2">
-            {results.map((t) => {
-              const isCurrent = current?.seokey === t.seokey;
-              return (
-                <li
-                  key={t.seokey}
-                  className={`group flex items-center gap-4 p-3 rounded-xl border transition ${
-                    isCurrent
-                      ? "bg-accent border-primary/40"
-                      : "bg-card border-border hover:bg-accent/50"
-                  }`}
-                >
-                  <img
-                    src={t.thumbnail.medium || t.thumbnail.small}
-                    alt={t.title}
-                    className="size-14 rounded-lg object-cover bg-muted"
-                    loading="lazy"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{t.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {t.artists} • {t.album}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline">
-                    {t.duration}
-                  </span>
-                  <button
-                    onClick={() => (isCurrent ? toggle() : playTrack(t))}
-                    disabled={!pickUrl(t, quality)}
-                    className="size-10 rounded-full bg-primary text-primary-foreground grid place-items-center hover:scale-105 disabled:opacity-40 transition"
-                    aria-label={isCurrent && playing ? "Pause" : "Play"}
-                  >
-                    {isCurrent && playing ? (
-                      <Pause className="size-4" />
-                    ) : (
-                      <Play className="size-4 ml-0.5" />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
+            {results.map((t) => (
+              <TrackRow
+                key={t.seokey}
+                track={t}
+                queue={results}
+                isCurrent={current?.seokey === t.seokey}
+                playing={playing}
+                onPlay={() => play(t, results)}
+                onToggle={toggle}
+                saved={playlist.has(t.seokey)}
+                onToggleSave={() => playlist.toggle(t)}
+                disabled={!pickUrl(t, quality)}
+              />
+            ))}
           </ul>
         )}
 
@@ -305,37 +238,76 @@ function Home() {
           <p className="mt-10 text-center text-muted-foreground">No results found.</p>
         )}
       </main>
-
-      {current && (
-        <div className="fixed bottom-0 inset-x-0 border-t border-border bg-card/95 backdrop-blur z-20">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-            <img
-              src={current.thumbnail.medium || current.thumbnail.small}
-              alt={current.title}
-              className="size-12 rounded-lg object-cover bg-muted"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">{current.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{current.artists}</p>
-            </div>
-            <button
-              onClick={toggle}
-              className="size-11 rounded-full bg-primary text-primary-foreground grid place-items-center"
-              aria-label={playing ? "Pause" : "Play"}
-            >
-              {playing ? <Pause className="size-5" /> : <Play className="size-5 ml-0.5" />}
-            </button>
-            <audio
-              ref={audioRef}
-              onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onEnded={() => setPlaying(false)}
-              controls
-              className="hidden md:block w-72"
-            />
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+export function TrackRow({
+  track,
+  queue: _queue,
+  isCurrent,
+  playing,
+  onPlay,
+  onToggle,
+  saved,
+  onToggleSave,
+  disabled,
+}: {
+  track: Track;
+  queue?: Track[];
+  isCurrent: boolean;
+  playing: boolean;
+  onPlay: () => void;
+  onToggle: () => void;
+  saved: boolean;
+  onToggleSave: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <li
+      className={`group flex items-center gap-4 p-3 rounded-xl border transition ${
+        isCurrent ? "bg-accent border-primary/40" : "bg-card border-border hover:bg-accent/50"
+      }`}
+    >
+      <img
+        src={track.thumbnail.medium || track.thumbnail.small}
+        alt={track.title}
+        className="size-14 rounded-lg object-cover bg-muted"
+        loading="lazy"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{track.title}</p>
+        <p className="text-sm text-muted-foreground truncate">
+          {track.artists} • {track.album}
+        </p>
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline">
+        {track.duration}
+      </span>
+      <button
+        onClick={onToggleSave}
+        className={`size-10 rounded-full grid place-items-center transition ${
+          saved
+            ? "text-primary bg-primary/10 hover:bg-primary/20"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        }`}
+        aria-label={saved ? "Remove from playlist" : "Add to playlist"}
+        title={saved ? "Remove from playlist" : "Add to playlist"}
+      >
+        <Heart className={`size-4 ${saved ? "fill-current" : ""}`} />
+      </button>
+      <button
+        onClick={() => (isCurrent ? onToggle() : onPlay())}
+        disabled={disabled}
+        className="size-10 rounded-full bg-primary text-primary-foreground grid place-items-center hover:scale-105 disabled:opacity-40 transition"
+        aria-label={isCurrent && playing ? "Pause" : "Play"}
+      >
+        {isCurrent && playing ? (
+          <span className="block size-2.5 bg-primary-foreground rounded-sm" />
+        ) : (
+          <Play className="size-4 ml-0.5" />
+        )}
+      </button>
+    </li>
   );
 }
