@@ -256,28 +256,28 @@ export function TrackRow({
 }) {
   return (
     <li
-      className={`group flex items-center gap-4 p-3 rounded-xl border transition ${
+      className={`group flex items-center gap-2 sm:gap-4 p-2.5 sm:p-3 rounded-xl border transition ${
         isCurrent ? "bg-accent border-primary/40" : "bg-card border-border hover:bg-accent/50"
       }`}
     >
       <img
         src={track.thumbnail.medium || track.thumbnail.small}
         alt={track.title}
-        className="size-14 rounded-lg object-cover bg-muted"
+        className="size-12 sm:size-14 rounded-lg object-cover bg-muted shrink-0"
         loading="lazy"
       />
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{track.title}</p>
-        <p className="text-sm text-muted-foreground truncate">
+        <p className="font-medium truncate text-sm sm:text-base">{track.title}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground truncate">
           {track.artists} • {track.album}
         </p>
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline">
+      <span className="text-xs text-muted-foreground tabular-nums hidden sm:inline shrink-0">
         {track.duration}
       </span>
       <button
         onClick={onToggleSave}
-        className={`size-10 rounded-full grid place-items-center transition ${
+        className={`size-10 shrink-0 rounded-full grid place-items-center transition ${
           saved
             ? "text-primary bg-primary/10 hover:bg-primary/20"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -290,7 +290,7 @@ export function TrackRow({
       <button
         onClick={() => (isCurrent ? onToggle() : onPlay())}
         disabled={disabled}
-        className="size-10 rounded-full bg-primary text-primary-foreground grid place-items-center hover:scale-105 disabled:opacity-40 transition"
+        className="size-10 shrink-0 rounded-full bg-primary text-primary-foreground grid place-items-center hover:scale-105 active:scale-95 disabled:opacity-40 transition"
         aria-label={isCurrent && playing ? "Pause" : "Play"}
       >
         {isCurrent && playing ? (
@@ -302,7 +302,7 @@ export function TrackRow({
       {onRemove && (
         <button
           onClick={onRemove}
-          className="size-10 rounded-full grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+          className="size-10 shrink-0 rounded-full grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
           aria-label="Remove from playlist"
           title="Remove from playlist"
         >
