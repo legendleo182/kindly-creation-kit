@@ -251,6 +251,7 @@ export function TrackRow({
   onToggle,
   saved,
   onToggleSave,
+  onRemove,
   disabled,
 }: {
   track: Track;
@@ -261,6 +262,7 @@ export function TrackRow({
   onToggle: () => void;
   saved: boolean;
   onToggleSave: () => void;
+  onRemove?: () => void;
   disabled?: boolean;
 }) {
   return (
