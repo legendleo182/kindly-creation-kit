@@ -208,7 +208,9 @@ function PlayerBar({
               onPlay={onPlay}
               onPause={onPause}
               onEnded={onEnded}
-              className="hidden"
+              controls
+              controlsList="nodownload noplaybackrate"
+              className="hidden md:block w-64"
             />
           </>
         ) : (
