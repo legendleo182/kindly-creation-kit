@@ -10,7 +10,7 @@ import {
   type Track,
   type Suggestion,
 } from "@/lib/gaana.functions";
-import { AppHeader, pickUrl, usePlayer, type Quality } from "@/lib/player-context";
+import { AppHeader, pickUrl, usePlayer } from "@/lib/player-context";
 import { usePlaylist } from "@/lib/playlist-store";
 
 export const Route = createFileRoute("/")({
@@ -48,7 +48,7 @@ function Home() {
   const suggestFn = useServerFn(suggestSongs);
   const getTrackFn = useServerFn(getTrack);
 
-  const { current, playing, quality, setQuality, play, toggle } = usePlayer();
+  const { current, playing, quality, play, toggle } = usePlayer();
   const playlist = usePlaylist();
 
   const [query, setQuery] = useState("");
@@ -176,17 +176,6 @@ function Home() {
               </ul>
             )}
           </div>
-          <select
-            value={quality}
-            onChange={(e) => setQuality(e.target.value as Quality)}
-            className="h-12 px-3 rounded-xl bg-card border border-border text-sm"
-            aria-label="Quality"
-          >
-            <option value="very_high">320 kbps</option>
-            <option value="high">128 kbps</option>
-            <option value="medium">64 kbps</option>
-            <option value="low">16 kbps</option>
-          </select>
           <button
             type="submit"
             disabled={search.isPending}
