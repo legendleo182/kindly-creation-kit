@@ -144,3 +144,11 @@ export const suggestSongs = createServerFn({ method: "POST" })
       return [];
     }
   });
+
+export const getTrack = createServerFn({ method: "POST" })
+  .inputValidator((input: { seokey: string }) =>
+    z.object({ seokey: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<Track | null> => {
+    return fetchTrack(data.seokey);
+  });
