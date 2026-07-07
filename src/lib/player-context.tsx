@@ -221,6 +221,25 @@ function PlayerBar({
   );
 }
 
+function SaveButton({ track }: { track: Track }) {
+  const playlist = usePlaylist();
+  const saved = playlist.has(track.seokey);
+  return (
+    <button
+      onClick={() => playlist.toggle(track)}
+      className={`size-9 rounded-full grid place-items-center transition ${
+        saved
+          ? "text-primary bg-primary/10 hover:bg-primary/20"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+      }`}
+      aria-label={saved ? "Remove from playlist" : "Add to playlist"}
+      title={saved ? "Remove from playlist" : "Add to playlist"}
+    >
+      <Heart className={`size-4 ${saved ? "fill-current" : ""}`} />
+    </button>
+  );
+}
+
 /* ---------------- Nav header used across routes ---------------- */
 
 export function AppHeader({ active }: { active: "search" | "playlist" }) {
