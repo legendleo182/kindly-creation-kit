@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Search, Play, Music2, Loader2, Heart } from "lucide-react";
+import { Search, Play, Music2, Loader2, Heart, X } from "lucide-react";
 import {
   searchSongs,
   suggestSongs,
