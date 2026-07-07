@@ -256,7 +256,7 @@ export function TrackRow({
 }) {
   return (
     <li
-      className={`group flex items-center gap-2 sm:gap-4 p-2.5 sm:p-3 rounded-xl border transition ${
+      className={`group flex items-center gap-2 sm:gap-4 p-2.5 sm:p-3 rounded-xl border transition min-w-0 w-full ${
         isCurrent ? "bg-accent border-primary/40" : "bg-card border-border hover:bg-accent/50"
       }`}
     >
