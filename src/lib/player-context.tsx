@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { Track } from "@/lib/gaana.functions";
 import { usePlaylist } from "@/lib/playlist-store";
-import noxtuneLogo from "@/assets/noxtune-logo.png.asset.json";
+const noxtuneLogo = { url: "/noxtune-logo.png" };
 
 export type Quality = "very_high" | "high" | "medium" | "low";
 
