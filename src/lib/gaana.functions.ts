@@ -107,3 +107,48 @@ export const searchSongs = createServerFn({ method: "POST" })
     const results = await Promise.all(ids.map((id) => fetchTrack(id)));
     return results.filter((t): t is Track => t !== null);
   });
+
+export type Suggestion = {
+  seokey: string;
+  title: string;
+  subtitle: string;
+  thumbnail: string;
+};
+
+export const suggestSongs = createServerFn({ method: "POST" })
+  .inputValidator((input: { query: string }) =>
+    z.object({ query: z.string().trim().min(1) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<Suggestion[]> => {
+    const res = await fetch(SEARCH_URL + encodeURIComponent(data.query), {
+      method: "POST",
+    });
+    if (!res.ok) return [];
+    const json: any = await res.json();
+    try {
+      const gd = json.gr[0].gd.slice(0, 6);
+      return gd.map((t: any) => {
+        const artists = Array.isArray(t.artist)
+          ? t.artist.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ")
+          : typeof t.artist === "string"
+            ? t.artist
+            : "";
+        return {
+          seokey: t.seo,
+          title: String(t.title ?? t.track_title ?? "").trim(),
+          subtitle: artists || String(t.album_title ?? t.albumtitle ?? "").trim(),
+          thumbnail: String(t.artwork ?? t.artwork_web ?? "").trim(),
+        };
+      });
+    } catch {
+      return [];
+    }
+  });
+
+export const getTrack = createServerFn({ method: "POST" })
+  .inputValidator((input: { seokey: string }) =>
+    z.object({ seokey: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<Track | null> => {
+    return fetchTrack(data.seokey);
+  });
