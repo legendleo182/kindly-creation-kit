@@ -59,7 +59,7 @@ function Home() {
   const debounced = useDebounced(query, 220);
 
   const search = useMutation({
-    mutationFn: (q: string) => searchFn({ data: { query: q, limit: 15 } }),
+    mutationFn: (q: string) => searchFn({ data: { query: q, limit: 50 } }),
   });
 
   const suggestions = useQuery({
