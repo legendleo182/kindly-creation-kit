@@ -176,6 +176,7 @@ function PlayerBar({
               <p className="font-medium truncate text-sm">{current.title}</p>
               <p className="text-xs text-muted-foreground truncate">{current.artists}</p>
             </div>
+            <SaveButton track={current} />
             <div className="flex items-center gap-1">
               <button
                 onClick={onPrev}
