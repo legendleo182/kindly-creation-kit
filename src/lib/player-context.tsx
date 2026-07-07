@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { Play, Pause, Music2, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, Music2, SkipBack, SkipForward, Heart } from "lucide-react";
 import type { Track } from "@/lib/gaana.functions";
+import { usePlaylist } from "@/lib/playlist-store";
 
 export type Quality = "very_high" | "high" | "medium" | "low";
 
