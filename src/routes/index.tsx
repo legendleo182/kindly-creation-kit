@@ -310,6 +310,16 @@ export function TrackRow({
           <Play className="size-4 ml-0.5" />
         )}
       </button>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="size-10 rounded-full grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+          aria-label="Remove from playlist"
+          title="Remove from playlist"
+        >
+          <X className="size-4" />
+        </button>
+      )}
     </li>
   );
 }
