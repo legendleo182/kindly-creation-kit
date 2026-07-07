@@ -249,8 +249,8 @@ export function AppHeader({ active }: { active: "search" | "playlist" }) {
     <header className="border-b border-border/60 backdrop-blur sticky top-0 z-30 bg-background/80">
       <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="size-9 rounded-xl overflow-hidden bg-black grid place-items-center">
-            <img src={noxtuneLogo.url} alt="Noxtune" className="size-full object-cover" />
+          <div className="size-9 rounded-xl overflow-hidden bg-white grid place-items-center">
+            <img src={noxtuneLogo.url} alt="Noxtune" className="size-full object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-semibold leading-tight">Noxtune</h1>
