@@ -208,8 +208,7 @@ function PlayerBar({
               onPlay={onPlay}
               onPause={onPause}
               onEnded={onEnded}
-              controls
-              className="hidden md:block w-64"
+              className="hidden"
             />
           </>
         ) : (
