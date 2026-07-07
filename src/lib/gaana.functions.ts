@@ -88,11 +88,11 @@ async function fetchTrack(seokey: string): Promise<Track | null> {
 export const searchSongs = createServerFn({ method: "POST" })
   .inputValidator((input: { query: string; limit?: number }) =>
     z
-      .object({ query: z.string().trim().min(1), limit: z.number().int().positive().max(30).optional() })
+      .object({ query: z.string().trim().min(1), limit: z.number().int().positive().max(100).optional() })
       .parse(input),
   )
   .handler(async ({ data }): Promise<Track[]> => {
-    const limit = data.limit ?? 12;
+    const limit = data.limit ?? 50;
     const res = await fetch(SEARCH_URL + encodeURIComponent(data.query), {
       method: "POST",
     });
