@@ -251,7 +251,7 @@ export function AppHeader({ active }: { active: "search" | "playlist" }) {
             <Music2 className="size-5" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold leading-tight">Dhun</h1>
+            <h1 className="text-lg font-semibold leading-tight">Noxtune</h1>
             <p className="text-xs text-muted-foreground">Search & play any song</p>
           </div>
         </Link>
