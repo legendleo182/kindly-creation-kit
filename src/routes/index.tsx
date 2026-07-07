@@ -1,9 +1,15 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Search, Play, Pause, Music2, Loader2 } from "lucide-react";
-import { searchSongs, type Track } from "@/lib/gaana.functions";
+import {
+  searchSongs,
+  suggestSongs,
+  getTrack,
+  type Track,
+  type Suggestion,
+} from "@/lib/gaana.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,28 +38,61 @@ function pickUrl(t: Track, quality: Quality): string | undefined {
   return t.music[quality] ?? t.music.high ?? t.music.medium ?? t.music.low;
 }
 
+function useDebounced<T>(value: T, delay = 250): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return v;
+}
+
 function Home() {
   const searchFn = useServerFn(searchSongs);
+  const suggestFn = useServerFn(suggestSongs);
+  const getTrackFn = useServerFn(getTrack);
+
   const [query, setQuery] = useState("");
   const [quality, setQuality] = useState<Quality>("high");
   const [current, setCurrent] = useState<Track | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const debounced = useDebounced(query, 220);
 
   const search = useMutation({
     mutationFn: (q: string) => searchFn({ data: { query: q, limit: 15 } }),
   });
 
+  const suggestions = useQuery({
+    queryKey: ["suggest", debounced],
+    queryFn: () => suggestFn({ data: { query: debounced } }),
+    enabled: focused && debounced.trim().length >= 2,
+    staleTime: 60_000,
+  });
+
+  const sugList: Suggestion[] = suggestions.data ?? [];
+  const showDropdown = focused && debounced.trim().length >= 2 && sugList.length > 0;
+
   const results = search.data ?? [];
 
-  const currentUrl = useMemo(
-    () => (current ? pickUrl(current, quality) : undefined),
-    [current, quality],
-  );
+  // Close dropdown on outside click
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node)) setFocused(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
+    setFocused(false);
+    setActiveIdx(-1);
     search.mutate(query.trim());
   }
 
@@ -61,13 +100,36 @@ function Home() {
     const url = pickUrl(t, quality);
     if (!url) return;
     setCurrent(t);
-    // Let the effect below set src via key change
     requestAnimationFrame(() => {
       const a = audioRef.current;
       if (!a) return;
       a.src = url;
       a.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     });
+  }
+
+  async function playSuggestion(s: Suggestion) {
+    setFocused(false);
+    setActiveIdx(-1);
+    setQuery(s.title);
+    const t = await getTrackFn({ data: { seokey: s.seokey } });
+    if (t) playTrack(t);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, sugList.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && activeIdx >= 0) {
+      e.preventDefault();
+      playSuggestion(sugList[activeIdx]);
+    } else if (e.key === "Escape") {
+      setFocused(false);
+    }
   }
 
   function toggle() {
@@ -83,7 +145,7 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/60 backdrop-blur sticky top-0 z-10 bg-background/80">
+      <header className="border-b border-border/60 backdrop-blur sticky top-0 z-20 bg-background/80">
         <div className="max-w-4xl mx-auto px-4 py-5 flex items-center gap-3">
           <div className="size-9 rounded-xl bg-primary text-primary-foreground grid place-items-center">
             <Music2 className="size-5" />
@@ -97,14 +159,62 @@ function Home() {
 
       <main className="max-w-4xl mx-auto px-4 pt-8 pb-40">
         <form onSubmit={onSubmit} className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div ref={wrapRef} className="flex-1 relative">
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActiveIdx(-1);
+                setFocused(true);
+              }}
+              onFocus={() => setFocused(true)}
+              onKeyDown={onKeyDown}
               placeholder="Search songs, artists, albums..."
               className="w-full h-12 pl-10 pr-4 rounded-xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-ring transition"
+              autoComplete="off"
             />
+            {suggestions.isFetching && focused && debounced.trim().length >= 2 && (
+              <Loader2 className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
+            )}
+
+            {showDropdown && (
+              <ul className="absolute z-30 left-0 right-0 mt-2 rounded-xl bg-popover border border-border shadow-lg overflow-hidden">
+                {sugList.map((s, i) => (
+                  <li key={s.seokey}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => playSuggestion(s)}
+                      onMouseEnter={() => setActiveIdx(i)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition ${
+                        i === activeIdx ? "bg-accent" : "hover:bg-accent/60"
+                      }`}
+                    >
+                      {s.thumbnail ? (
+                        <img
+                          src={s.thumbnail}
+                          alt=""
+                          className="size-9 rounded-md object-cover bg-muted"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="size-9 rounded-md bg-muted grid place-items-center">
+                          <Music2 className="size-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{s.title}</p>
+                        {s.subtitle && (
+                          <p className="text-xs text-muted-foreground truncate">{s.subtitle}</p>
+                        )}
+                      </div>
+                      <Play className="size-4 text-muted-foreground" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <select
             value={quality}
@@ -133,7 +243,7 @@ function Home() {
         {!search.data && !search.isPending && (
           <div className="mt-20 text-center text-muted-foreground">
             <Music2 className="size-10 mx-auto mb-3 opacity-50" />
-            <p>Type a song name above and hit Search.</p>
+            <p>Type a song name — suggestions appear as you type.</p>
           </div>
         )}
 
@@ -197,7 +307,7 @@ function Home() {
       </main>
 
       {current && (
-        <div className="fixed bottom-0 inset-x-0 border-t border-border bg-card/95 backdrop-blur">
+        <div className="fixed bottom-0 inset-x-0 border-t border-border bg-card/95 backdrop-blur z-20">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
             <img
               src={current.thumbnail.medium || current.thumbnail.small}
