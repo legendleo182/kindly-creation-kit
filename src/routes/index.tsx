@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Search, Play, Music2, Loader2, Heart } from "lucide-react";
+import { Search, Play, Music2, Loader2, Heart, X } from "lucide-react";
 import {
   searchSongs,
   suggestSongs,
@@ -251,6 +251,7 @@ export function TrackRow({
   onToggle,
   saved,
   onToggleSave,
+  onRemove,
   disabled,
 }: {
   track: Track;
@@ -261,6 +262,7 @@ export function TrackRow({
   onToggle: () => void;
   saved: boolean;
   onToggleSave: () => void;
+  onRemove?: () => void;
   disabled?: boolean;
 }) {
   return (
@@ -308,6 +310,16 @@ export function TrackRow({
           <Play className="size-4 ml-0.5" />
         )}
       </button>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="size-10 rounded-full grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+          aria-label="Remove from playlist"
+          title="Remove from playlist"
+        >
+          <X className="size-4" />
+        </button>
+      )}
     </li>
   );
 }

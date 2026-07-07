@@ -72,6 +72,7 @@ function PlaylistPage() {
                 onToggle={toggle}
                 saved
                 onToggleSave={() => playlist.remove(t.seokey)}
+                onRemove={() => playlist.remove(t.seokey)}
                 disabled={!pickUrl(t, quality)}
               />
             ))}
