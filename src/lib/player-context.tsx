@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { Play, Pause, Music2, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, Music2, SkipBack, SkipForward, Heart } from "lucide-react";
 import type { Track } from "@/lib/gaana.functions";
+import { usePlaylist } from "@/lib/playlist-store";
 
 export type Quality = "very_high" | "high" | "medium" | "low";
 
@@ -175,6 +176,7 @@ function PlayerBar({
               <p className="font-medium truncate text-sm">{current.title}</p>
               <p className="text-xs text-muted-foreground truncate">{current.artists}</p>
             </div>
+            <SaveButton track={current} />
             <div className="flex items-center gap-1">
               <button
                 onClick={onPrev}
@@ -216,6 +218,25 @@ function PlayerBar({
         )}
       </div>
     </div>
+  );
+}
+
+function SaveButton({ track }: { track: Track }) {
+  const playlist = usePlaylist();
+  const saved = playlist.has(track.seokey);
+  return (
+    <button
+      onClick={() => playlist.toggle(track)}
+      className={`size-9 rounded-full grid place-items-center transition ${
+        saved
+          ? "text-primary bg-primary/10 hover:bg-primary/20"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+      }`}
+      aria-label={saved ? "Remove from playlist" : "Add to playlist"}
+      title={saved ? "Remove from playlist" : "Add to playlist"}
+    >
+      <Heart className={`size-4 ${saved ? "fill-current" : ""}`} />
+    </button>
   );
 }
 
