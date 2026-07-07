@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { Play, Pause, Music2, SkipBack, SkipForward, Heart } from "lucide-react";
 import type { Track } from "@/lib/gaana.functions";
 import { usePlaylist } from "@/lib/playlist-store";
+import noxtuneLogo from "@/assets/noxtune-logo.png.asset.json";
 
 export type Quality = "very_high" | "high" | "medium" | "low";
 
@@ -247,12 +248,12 @@ export function AppHeader({ active }: { active: "search" | "playlist" }) {
     <header className="border-b border-border/60 backdrop-blur sticky top-0 z-30 bg-background/80">
       <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="size-9 rounded-xl bg-primary text-primary-foreground grid place-items-center">
-            <Music2 className="size-5" />
+          <div className="size-9 rounded-xl overflow-hidden bg-black grid place-items-center">
+            <img src={noxtuneLogo.url} alt="Noxtune" className="size-full object-cover" />
           </div>
           <div>
             <h1 className="text-lg font-semibold leading-tight">Noxtune</h1>
-            <p className="text-xs text-muted-foreground">Search & play any song</p>
+            <p className="text-xs text-muted-foreground">Feel the music</p>
           </div>
         </Link>
         <nav className="ml-auto flex items-center gap-1 text-sm">
