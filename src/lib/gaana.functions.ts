@@ -125,24 +125,21 @@ export const suggestSongs = createServerFn({ method: "POST" })
     });
     if (!res.ok) return [];
     const json: any = await res.json();
+    let ids: string[] = [];
     try {
-      const gd = json.gr[0].gd.slice(0, 6);
-      return gd.map((t: any) => {
-        const artists = Array.isArray(t.artist)
-          ? t.artist.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean).join(", ")
-          : typeof t.artist === "string"
-            ? t.artist
-            : "";
-        return {
-          seokey: t.seo,
-          title: String(t.title ?? t.track_title ?? "").trim(),
-          subtitle: artists || String(t.album_title ?? t.albumtitle ?? "").trim(),
-          thumbnail: String(t.artwork ?? t.artwork_web ?? "").trim(),
-        };
-      });
+      ids = json.gr[0].gd.slice(0, 6).map((t: any) => t.seo).filter(Boolean);
     } catch {
       return [];
     }
+    const tracks = await Promise.all(ids.map((id) => fetchTrack(id)));
+    return tracks
+      .filter((t): t is Track => t !== null)
+      .map((t) => ({
+        seokey: t.seokey,
+        title: t.title,
+        subtitle: t.artists || t.album,
+        thumbnail: t.thumbnail.small || t.thumbnail.medium,
+      }));
   });
 
 export const getTrack = createServerFn({ method: "POST" })
